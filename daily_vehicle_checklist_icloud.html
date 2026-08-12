@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Vehicle Checklist</title>
+<style>
+  :root { --border:#b9c0c8; --head:#e9eef3; --accent:#1f6feb; --danger:#c62828; }
+  * { box-sizing:border-box; }
+  body { font-family:Arial,Helvetica,sans-serif; margin:0; background:#f5f7fa; color:#17202a; }
+  .wrap { max-width:1400px; margin:20px auto; padding:16px; }
+  .card { background:#fff; border:1px solid #d8dee5; border-radius:10px; padding:18px; box-shadow:0 2px 8px #0000000d; }
+  h1 { margin:0 0 6px; font-size:25px; }
+  .sub { color:#58636e; margin-bottom:16px; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; }
+  button { border:0; border-radius:7px; padding:9px 14px; cursor:pointer; font-weight:600; }
+  .primary { background:var(--accent); color:#fff; }
+  .secondary { background:#e9eef3; color:#17202a; }
+  .danger { background:#fde8e8; color:#a51d1d; }
+  label { font-weight:600; }
+  input, textarea, select { font:inherit; border:1px solid var(--border); border-radius:6px; padding:7px; }
+  input[type=text], input[type=date], input[type=number] { width:100%; }
+  .topgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; min-width:1000px; }
+  th, td { border:1px solid var(--border); padding:7px; vertical-align:middle; }
+  th { background:var(--head); }
+  .sticky { position:sticky; left:0; background:#fff; z-index:2; }
+  th.sticky { background:var(--head); z-index:3; }
+  .item { font-weight:600; min-width:210px; }
+  .driver { min-width:170px; }
+  .driver input { margin-top:4px; }
+  .status { display:flex; justify-content:center; gap:5px; flex-wrap:wrap; }
+  .status label { font-size:12px; font-weight:500; padding:4px 6px; border:1px solid #d2d8de; border-radius:5px; cursor:pointer; }
+  .status input { margin-right:3px; }
+  .section { margin-top:18px; overflow-x:auto; }
+  .smallgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  textarea { width:100%; min-height:90px; resize:vertical; }
+  .save-status { margin-left:auto; color:#4d5965; font-size:13px; }
+  .hint { font-size:13px; color:#65717c; margin-top:8px; }
+  .icloud-note { background:#eef6ff; border:1px solid #c8def5; border-radius:8px; padding:10px 12px; margin-bottom:14px; color:#334e68; font-size:13px; }
+  @media(max-width:800px) {
+    .topgrid,.smallgrid { grid-template-columns:1fr; }
+    .wrap { padding:8px; margin:8px auto; }
+    .save-status { width:100%; margin-left:0; }
+  }
+  @media print {
+    body { background:#fff; }
+    .wrap { max-width:none; margin:0; padding:0; }
+    .card { border:0; box-shadow:none; }
+    .toolbar { display:none; }
+    input, textarea { border:0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+  <h1>Daily Vehicle Checklist</h1>
+  <div class="sub">Complete the checklist for each driver/day. Working data is saved on this device. Completed checklists can be saved as individual files to iCloud Drive using the Apple Files share sheet.</div>
+
+  <div class="toolbar">
+    <button class="primary" onclick="saveCompletedToFiles()">Save completed checklist</button>
+    <button class="secondary" onclick="window.print()">Print / PDF</button>
+    <button class="secondary" onclick="saveNow()">Save working copy</button>
+    <button class="danger" onclick="clearData()">Clear this checklist</button>
+    <span id="saveStatus" class="save-status">Not saved yet</span>
+  </div>
+  <div class="icloud-note"><strong>iPhone/iPad:</strong> Tap <em>Save completed checklist</em>, then choose <strong>Save to Files → iCloud Drive</strong>. We recommend <strong>Vehicle Checklists / Completed</strong>.</div>
+
+  <div class="topgrid">
+    <div><label>Week commencing<br><input type="date" id="weekDate"></label></div>
+    <div><label>Vehicle registration<br><input type="text" id="vehicle" value="715 ZKE" placeholder="e.g. 715 ZKE" autocomplete="off"></label><div class="hint">Change the registration before starting a checklist. Each registration has its own working data on this device.</div></div>
+  </div>
+
+  <div class="section">
+  <table id="checkTable">
+    <thead>
+      <tr>
+        <th class="sticky">Checklist item</th>
+        <th>Mon<br><span class="dateLabel" data-day="0"></span></th>
+        <th>Tues<br><span class="dateLabel" data-day="1"></span></th>
+        <th>Wed<br><span class="dateLabel" data-day="2"></span></th>
+        <th>Thurs<br><span class="dateLabel" data-day="3"></span></th>
+        <th>Fri<br><span class="dateLabel" data-day="4"></span></th>
+        <th>Sat<br><span class="dateLabel" data-day="5"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  </div>
+
+  <div class="section">
+    <h3>Vehicle / weekly details</h3>
+    <div class="smallgrid">
+      <div><label>Faults Repaired By<br><input type="text" id="repairedBy"></label></div>
+      <div><label>Date<br><input type="date" id="repairDate"></label></div>
+      <div><label>Odometer Start<br><input type="number" id="odoStart"></label></div>
+      <div><label>Odometer End<br><input type="number" id="odoEnd"></label></div>
+    </div>
+    <br>
+    <label>Comments</label>
+    <textarea id="comments" placeholder="Enter comments, faults, follow-up actions, etc."></textarea>
+    <div class="hint">Saving is automatic as you type. Working data is stored locally on this device/browser. Use “Save completed checklist” to create an individual file for iCloud Drive.</div>
+  </div>
+</div>
+</div>
+
+<script>
+const STORAGE_PREFIX="vehicleChecklist_icloud_v2_";
+const days=["Mon","Tues","Wed","Thurs","Fri","Sat"];
+const drivers=[["BJW","065178631"],["AJP","037496420"],["HWC","097666237"]];
+const items=["Oil & Water","Fuel Level","Steering & Horn","Turn Indicators","Brakes & brake lights","Mirror Settings","Passenger doors","External Hatches","Windshield damage","Wheels & tyres","Lights or signs","Vehicle Cleanliness","Faults Recorded","Date faults rectified"];
+function normaliseVehicle(v){return (v||"").trim().replace(/\s+/g," ").toUpperCase();}
+function storageKey(){const v=normaliseVehicle(document.getElementById("vehicle").value)||"UNNAMED";return STORAGE_PREFIX+v.replace(/[^A-Z0-9]+/g,"_");}
+function safePart(v){return (v||"").trim().replace(/[^\w\s-]/g,"").replace(/\s+/g,"-")||"vehicle";}
+function key(day,item,driver){return `s_${day}_${item}_${driver}`;}
+function buildTable(){const tbody=document.getElementById("tbody");tbody.innerHTML="";const dr=document.createElement("tr");dr.innerHTML=`<td class="sticky item">Driver</td>`+days.map((_,d)=>`<td><div class="driver">${drivers.map((x,i)=>`<label><input type="text" data-id="driver_${d}_${i}" value="${x[0]} ${x[1]}" aria-label="Driver ${i+1}, ${days[d]}"></label>`).join("")}</div></td>`).join("");tbody.appendChild(dr);items.forEach((item,ii)=>{const tr=document.createElement("tr");tr.innerHTML=`<td class="sticky item">${item}</td>`+days.map((_,d)=>`<td><div class="status"><label><input type="radio" name="${key(d,ii,'status')}" data-id="${key(d,ii,'status')}" value="OK">OK</label><label><input type="radio" name="${key(d,ii,'status')}" data-id="${key(d,ii,'status')}" value="Fault">Fault</label><label><input type="radio" name="${key(d,ii,'status')}" data-id="${key(d,ii,'status')}" value="N/A">N/A</label></div></td>`).join("");tbody.appendChild(tr);});}
+function getData(){const data={};document.querySelectorAll("[data-id]").forEach(el=>{if(el.type==="radio"){if(el.checked)data[el.dataset.id]=el.value;}else data[el.dataset.id]=el.value;});["weekDate","vehicle","repairedBy","repairDate","odoStart","odoEnd","comments"].forEach(id=>data[id]=document.getElementById(id).value);return data;}
+function setData(data){Object.entries(data||{}).forEach(([id,val])=>{if(["weekDate","vehicle","repairedBy","repairDate","odoStart","odoEnd","comments"].includes(id)){const el=document.getElementById(id);if(el)el.value=val;return;}document.querySelectorAll(`[data-id="${CSS.escape(id)}"]`).forEach(el=>{if(el.type==="radio")el.checked=(el.value===val);else el.value=val;});});updateDates();}
+function setDefaultDate(){const d=new Date(),day=d.getDay(),diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);document.getElementById("weekDate").value=d.toISOString().slice(0,10);updateDates();}
+function updateDates(){const base=new Date(document.getElementById("weekDate").value+"T00:00:00");if(isNaN(base))return;document.querySelectorAll(".dateLabel").forEach(el=>{const d=new Date(base);d.setDate(base.getDate()+Number(el.dataset.day));el.textContent=d.toLocaleDateString(undefined,{day:"2-digit",month:"2-digit"});});}
+function saveNow(){localStorage.setItem(storageKey(),JSON.stringify(getData()));document.getElementById("saveStatus").textContent="Working copy saved "+new Date().toLocaleString();}
+function loadData(){const raw=localStorage.getItem(storageKey());if(raw){try{setData(JSON.parse(raw));document.getElementById("saveStatus").textContent="Working copy loaded";return;}catch(e){}}setDefaultDate();}
+function autoSave(){clearTimeout(window.saveTimer);window.saveTimer=setTimeout(saveNow,500);}
+function clearData(){if(confirm("Clear all entries for this vehicle's current working checklist?")){localStorage.removeItem(storageKey());location.reload();}}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function completedHtml(data){let vehicle=normaliseVehicle(data.vehicle)||"Vehicle",week=data.weekDate||"undated",rows="";for(let ii=0;ii<items.length;ii++){rows+=`<tr><th>${esc(items[ii])}</th>`;for(let d=0;d<days.length;d++)rows+=`<td>${esc(data[key(d,ii,"status")]||"")}</td>`;rows+="</tr>";}let driversRow="<tr><th>Driver</th>";for(let d=0;d<days.length;d++){let vals=[];for(let i=0;i<drivers.length;i++)vals.push(data[`driver_${d}_${i}`]||"");driversRow+=`<td>${vals.map(esc).join("<br>")}</td>`;}driversRow+="</tr>";return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vehicle Checklist - ${esc(vehicle)} - ${esc(week)}</title><style>body{font-family:Arial;margin:20px;color:#17202a}h1{margin-bottom:4px}.meta{color:#58636e;margin-bottom:18px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #b9c0c8;padding:7px;text-align:left;vertical-align:top}th{background:#e9eef3}.details{margin-top:18px;border:1px solid #d8dee5;padding:12px}@media print{body{margin:0}table{font-size:11px}}</style></head><body><h1>Daily Vehicle Checklist</h1><div class="meta"><strong>Vehicle:</strong> ${esc(vehicle)} &nbsp; | &nbsp; <strong>Week commencing:</strong> ${esc(week)}</div><table><thead><tr><th>Checklist item</th>${days.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${driversRow}${rows}</tbody></table><div class="details"><strong>Faults Repaired By:</strong> ${esc(data.repairedBy)}<br><strong>Repair Date:</strong> ${esc(data.repairDate)}<br><strong>Odometer Start:</strong> ${esc(data.odoStart)}<br><strong>Odometer End:</strong> ${esc(data.odoEnd)}<br><strong>Comments:</strong><br>${esc(data.comments).replace(/\n/g,"<br>")}</div><p style="font-size:12px;color:#65717c">Completed checklist saved from Vehicle Checklists.</p></body></html>`;}
+async function saveCompletedToFiles(){const data=getData(),vehicle=normaliseVehicle(data.vehicle);if(!vehicle){alert("Please enter a vehicle registration first.");return;}const week=data.weekDate||"undated",filename=`Vehicle-Checklist-${safePart(vehicle)}-${safePart(week)}.html`,file=new File([completedHtml(data)],filename,{type:"text/html;charset=utf-8"});try{if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`Vehicle Checklist - ${vehicle}`,text:`Completed checklist for ${vehicle}, week commencing ${week}.`,files:[file]});document.getElementById("saveStatus").textContent="Completed checklist shared/saved";saveNow();return;}}catch(e){if(e&&e.name==="AbortError")return;}const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);document.getElementById("saveStatus").textContent="Completed checklist downloaded";saveNow();}
+buildTable();document.getElementById("vehicle").addEventListener("change",()=>{document.getElementById("vehicle").value=normaliseVehicle(document.getElementById("vehicle").value);loadData();});document.querySelectorAll("input,textarea").forEach(el=>el.addEventListener("input",()=>{if(el.id==="weekDate")updateDates();autoSave();}));document.addEventListener("change",autoSave);document.getElementById("vehicle").value=normaliseVehicle(document.getElementById("vehicle").value)||"715 ZKE";loadData();
+</script>
+</body>
+</html>
